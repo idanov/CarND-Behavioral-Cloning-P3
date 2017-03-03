@@ -1,12 +1,14 @@
-import random
 import argparse
-from sdc.load import *
-from sdc.processing import *
-from keras.optimizers import Adam
+import random
+
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from sdc.model import build_nvidia
+from keras.optimizers import Adam
+from scipy.stats import norm
+
 from sdc.generator import generate_images_from
-import os.path
+from sdc.load import *
+from sdc.model import build_nvidia
+from sdc.processing import *
 
 ###############################################
 # Parse arguments
@@ -73,7 +75,7 @@ random.shuffle(data_train)
 # Validation data
 ##############
 data_validation = load_csv(args.validation, 'driving_log.csv')
-data_validation = strip_side_cam_images(data_validation)
+data_validation = add_side_cam_images(data_validation, args.side_cam)
 # Ensure all batches are full for convenience
 nb_validation_samples = (len(data_validation) // (args.batch * 2)) * args.batch
 data_validation = data_validation[:nb_validation_samples]
@@ -88,6 +90,10 @@ y_validation = np.array([a for a, _ in data_validation])
 train_hist, bin_edges = np.histogram(np.abs(y_train), bins=args.n_angle_bins, range=(0, 1), density=False)
 uniform = nb_train_samples / args.n_angle_bins
 weights = uniform / train_hist
+# std_gaussian = norm(loc=0., scale=0.5)
+# probs = std_gaussian.pdf(bin_edges[:-1])
+# weights = np.multiply(probs, weights)
+# print("Gaussian probabilities: ", probs)
 print("Histogram of angles (training): ", train_hist)
 print("Histogram bin edges: ", bin_edges)
 print("Balancing weights: ", weights)
@@ -99,22 +105,10 @@ model = build_nvidia(args.n_rows, args.n_cols, args.n_ch)
 model.compile(optimizer=Adam(lr=1e-4), loss="mse")
 model.summary()
 
-##################################
-# Save the model
-##################################
-print("Saving model's configuration file...")
-with open(args.output + ".json", 'w') as outfile:
-    outfile.write(model.to_json())
-print("Done.")
-
 ##################################################
 # Train the model
 ##################################################
-if len(args.best.strip()) > 0 and os.path.isfile(args.best + ".h5"):
-    print("Loading best model so far...")
-    model.load_weights(args.best + ".h5")
-
-checkpoint = ModelCheckpoint(args.output + ".h5", monitor='val_loss', verbose=1, save_best_only=False,
+checkpoint = ModelCheckpoint(args.output + ".{epoch:02d}.h5", monitor='val_loss', verbose=1, save_best_only=False,
                              save_weights_only=False, mode='auto')
 early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=3, verbose=1, mode='auto')
 

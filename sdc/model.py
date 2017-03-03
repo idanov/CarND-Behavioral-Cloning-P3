@@ -30,6 +30,7 @@ def build_nvidia(n_rows, n_cols, n_ch):
     model.add(Dropout(.5))
     model.add(ELU())
     model.add(Dense(50))
+    model.add(Dropout(.2))
     model.add(ELU())
     model.add(Dense(10))
     model.add(ELU())
