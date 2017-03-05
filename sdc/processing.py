@@ -26,7 +26,7 @@ def scale_brightness(img, ratio):
     return img
 
 
-def shift_image(img, angle, x_shift, steering_per_pixel=0.02):
+def shift_image(img, angle, x_shift, steering_per_pixel=0.04):
     rows, cols, _ = img.shape
     angle = within(angle + x_shift * steering_per_pixel, -1., 1.)
     mat = np.array([[1, 0, x_shift],
