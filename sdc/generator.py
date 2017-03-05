@@ -4,9 +4,9 @@ import random
 from sdc.processing import rotate_image, shift_image, scale_brightness, crop_image, resize_image, read_image
 
 # Hardcoded params
-shift_std = 15
-rotation_std = 5
-brightness_std = 0.25
+shift_range = 15
+rotation_range = 5
+brightness_range = 0.25
 adjust_brightness = True
 random_flip = True
 random_shift = False
@@ -22,16 +22,16 @@ def batch(iterable, n=1):
 def perturb(img, angle):
     # Add random shifts and rotations
     if random_shift and random.randint(0, 1) == 1:
-        img, angle = shift_image(img, angle, round(np.random.normal() * shift_std))
+        angle, img = shift_image(img, angle, round(np.random.normal() * shift_range))
     if random_rotation and random.randint(0, 1) == 1:
-        img, angle = rotate_image(img, angle, round(np.random.normal() * rotation_std))
+        angle, img = rotate_image(img, angle, round(np.random.normal() * rotation_range))
     # Randomly flip the image
     if random_flip and random.randint(0, 1) == 1:
         img = cv2.flip(img, 1)
         angle = -angle
     # Add random brightness
     if adjust_brightness:
-        img = scale_brightness(img, np.random.normal() * brightness_std)
+        img = scale_brightness(img, np.random.normal() * brightness_range)
     return [angle, img]
 
 
