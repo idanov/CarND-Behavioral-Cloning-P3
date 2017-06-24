@@ -3,12 +3,14 @@ from keras.layers import Dense, Dropout, Flatten, Lambda, ELU
 from keras.layers.convolutional import Convolution2D, Cropping2D
 
 
+# Function used by the resize layer
 def resize(img):
     import tensorflow as tf
     n_rows_after, n_cols_after, n_ch_after = 66, 200, 3
     return tf.image.resize_images(img, (n_rows_after, n_cols_after))
 
 
+# A function building an Nvidia CNN model with some hardcoded dropout layers
 def build_nvidia(n_rows, n_cols, n_ch):
     model = Sequential()
     model.add(Cropping2D(cropping=((55, 25), (0, 0)), input_shape=(n_rows, n_cols, n_ch)))

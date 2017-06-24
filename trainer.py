@@ -1,14 +1,13 @@
 import argparse
 import random
+import numpy as np
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.optimizers import Adam
-from scipy.stats import norm
 
 from sdc.generator import generate_images_from
-from sdc.load import *
+from sdc.load import load_csv, add_side_cam_images, strip_side_cam_images
 from sdc.model import build_nvidia
-from sdc.processing import *
 
 ###############################################
 # Parse arguments
@@ -29,28 +28,9 @@ parser.add_argument('--side-cam', type=float, default=0.25, help='Side cam offse
 parser.add_argument('--n-angle-bins', type=int, default=20, help='Number of bins for the angles histogram.')
 args = parser.parse_args()
 
-# class dataobject:
-#     def __init__(self, **kwargs):
-#         self.__dict__.update(kwargs)
-# 
-# args = dataobject(train='data/',
-#                   train2='front1/',
-#                   train3='back1/',
-#                   validation='front2/',
-#                   output='nvidia_model',
-#                   best='best_model',
-#                   epochs=10,
-#                   batch=128,
-#                   n_rows=160,
-#                   n_cols=320,
-#                   n_ch=3,
-#                   side_cam=0.25,
-#                   n_angle_bins=20
-#                  )
-
-############
+####################
 # Training data
-############
+####################
 data_train = load_csv(args.train, 'driving_log.csv')
 if len(args.train2) > 0:
     more_data_train = load_csv(args.train2, 'driving_log.csv')
@@ -71,9 +51,9 @@ data_train = data_train[:nb_train_samples]
 # Shuffle the data
 random.shuffle(data_train)
 
-##############
+#######################
 # Validation data
-##############
+#######################
 data_validation = load_csv(args.validation, 'driving_log.csv')
 data_validation = add_side_cam_images(data_validation, args.side_cam)
 # Ensure all batches are full for convenience
@@ -84,16 +64,15 @@ print("# training samples: ", nb_train_samples)
 print("# training samples (main cam only): ", nb_train_main_cam_samples)
 print("# validation samples: ", nb_validation_samples)
 
+##########################################
+# Dataset re-balancing
+##########################################
 y_train = np.array([a for a, _ in data_train])
 y_validation = np.array([a for a, _ in data_validation])
 
 train_hist, bin_edges = np.histogram(np.abs(y_train), bins=args.n_angle_bins, range=(0, 1), density=False)
 uniform = nb_train_samples / args.n_angle_bins
 weights = uniform / train_hist
-# std_gaussian = norm(loc=0., scale=0.5)
-# probs = std_gaussian.pdf(bin_edges[:-1])
-# weights = np.multiply(probs, weights)
-# print("Gaussian probabilities: ", probs)
 print("Histogram of angles (training): ", train_hist)
 print("Histogram bin edges: ", bin_edges)
 print("Balancing weights: ", weights)
